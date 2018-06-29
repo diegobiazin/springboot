@@ -1,6 +1,6 @@
 package br.com.dbs.awesome.error;
 
-public class ResourceNotFoundDetails extends ErrorDetail{
+public class ResourceNotFoundDetails extends ErrorDetails {
 
     public static final class builder {
         private String title;

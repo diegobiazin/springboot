@@ -1,14 +1,20 @@
 package br.com.dbs.awesome.handler;
 
+import br.com.dbs.awesome.error.ErrorDetails;
 import br.com.dbs.awesome.error.ResourceNotFoundDetails;
 import br.com.dbs.awesome.error.ResourceNotFoundException;
 import br.com.dbs.awesome.error.ValidationErrorDetails;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.lang.Nullable;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -17,9 +23,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @ControllerAdvice
-public class RestExceptionHandler {
+public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException rfnException){
+    public ResponseEntity<?> handleResourceNotFoundException(ResourceNotFoundException rfnException) {
         ResourceNotFoundDetails rfnDetails = ResourceNotFoundDetails.builder
                 .newBuilder()
                 .timeStamp(new Date().getTime())
@@ -32,12 +38,14 @@ public class RestExceptionHandler {
         return new ResponseEntity<>(rfnDetails, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleMethodArgumentNotValidException(MethodArgumentNotValidException manvException){
+    @Override
+    public ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException manvException,
+                                                               HttpHeaders headers,
+                                                               HttpStatus status,
+                                                               WebRequest request) {
         Map<String, String> fieldErrorsReturn = new HashMap<>();
-        for (FieldError field: manvException.getBindingResult().getFieldErrors()) {
+        for (FieldError field : manvException.getBindingResult().getFieldErrors())
             fieldErrorsReturn.put(field.getField(), field.getDefaultMessage());
-        }
 
         ValidationErrorDetails rfnDetails = ValidationErrorDetails.builder
                 .newBuilder()
@@ -48,8 +56,24 @@ public class RestExceptionHandler {
                 .developerMesasge(manvException.getClass().getName())
                 .fieldMessage(fieldErrorsReturn)
                 .build();
-
         return new ResponseEntity<>(rfnDetails, HttpStatus.BAD_REQUEST);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleExceptionInternal(Exception ex,
+                                                             @Nullable Object body,
+                                                             HttpHeaders headers,
+                                                             HttpStatus status,
+                                                             WebRequest request) {
+        ErrorDetails errorDetails = ErrorDetails.Builder
+                .newBuilder()
+                .timeStamp(new Date().getTime())
+                .status(status.value())
+                .title("Internal Exception")
+                .detail(ex.getMessage())
+                .developerMesasge(ex.getClass().getName())
+                .build();
+        return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
     }
 }
 

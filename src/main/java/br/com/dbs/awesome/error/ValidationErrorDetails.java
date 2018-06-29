@@ -2,7 +2,7 @@ package br.com.dbs.awesome.error;
 
 import java.util.Map;
 
-public class ValidationErrorDetails extends ErrorDetail{
+public class ValidationErrorDetails extends ErrorDetails {
     private Map<String, String> fieldMessage;
 
     public Map<String, String> getFieldMessage() {
